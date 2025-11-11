@@ -41,11 +41,17 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
+from contextlib import asynccontextmanager
 import sqlite3
 import json
 import math
 from contextlib import contextmanager
 import os
+import sys
+
+# Get the project root directory
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+DATABASE = os.path.join(PROJECT_ROOT, 'backend', 'shuttle.db')
 
 # ==================== MODELS ====================
 
@@ -138,19 +144,38 @@ def get_average_speed(shuttle_id: int = 1, minutes: int = 5) -> float:
         result = cursor.fetchone()
         return result['avg_speed'] if result['avg_speed'] else 25.0
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Check database saat startup"""
+    if not os.path.exists(DATABASE):
+        print("⚠️  WARNING: Database not found!")
+        print("   Run: python setup_database.py")
+    else:
+        print("✅ Database found")
+    print("🚀 Server started...")
+    print("🚀 UISI Shuttle Tracking Server started")
+    print("📍 API Docs: http://localhost:8000/docs")
+    print("🌐 Frontend: http://localhost:8000/")
+    yield
+    print("👋 Server shutting down...")
+
 # ==================== FASTAPI APP ====================
 
 app = FastAPI(
     title="UISI Shuttle Tracking API",
     description="Sistem tracking shuttle kampus dengan flexible routing",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 # CORS - allow all origins untuk development
 # CATATAN: Untuk production, ganti "*" dengan domain spesifik
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[ALLOWED_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -180,22 +205,15 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
-            except:
-                pass
+            except Exception as e:
+                print(f"❌ Broadcast error: {e}")
+                dead_connections.append(connection)
+        
+        # Remove dead connections
+        for conn in dead_connections:
+            self.active_connections.remove(conn)
 
 manager = ConnectionManager()
-
-@app.on_event("startup")
-async def startup_event():
-    """Check database saat startup"""
-    if not os.path.exists(DATABASE):
-        print("⚠️  WARNING: Database not found!")
-        print("   Run: python setup_database.py")
-    else:
-        print("✅ Database found")
-    print("🚀 UISI Shuttle Tracking Server started")
-    print("📍 API Docs: http://localhost:8000/docs")
-    print("🌐 Frontend: http://localhost:8000/")
 
 # ==================== ENDPOINTS ====================
 
@@ -442,11 +460,18 @@ async def accept_route_request(request_id: int):
                 raise HTTPException(status_code=404, detail="Request not found")
             
             # Update request status
-            cursor.execute("""
-                UPDATE route_requests 
-                SET status = 'accepted'
-                WHERE id = ?
-            """, (request_id,))
+            # cursor.execute("""
+            #     UPDATE route_requests
+            #     SET status = 'accepted'
+            #     WHERE id = ?
+            # """, (request_id,))
+            cursor.execute("BEGIN IMMEDIATE")  # Lock database
+            cursor.execute("SELECT status FROM route_requests WHERE id = ?",
+                           (request_id,))
+            current_status = cursor.fetchone()
+
+            if current_status['status'] != 'pending':
+                raise HTTPException(400, "Request already accepted")
             
             # Clear old active routes
             cursor.execute("""

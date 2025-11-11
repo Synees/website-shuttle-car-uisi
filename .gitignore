@@ -4,9 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-venv/
-env/
-ENV/
 
 # Database
 *.db
@@ -30,3 +27,8 @@ Thumbs.db
 
 # Environment
 .env
+.venv
+.venvs
+venv/
+env/
+ENV/
