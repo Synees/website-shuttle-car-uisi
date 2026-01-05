@@ -215,11 +215,6 @@ manager = ConnectionManager()
 async def lifespan(app: FastAPI):
     if not os.path.exists(DATABASE):
         print("⚠️  WARNING: Database not found! Run: python backend/setup_database2.py")
-    else:
-        print("✅ Database connected")
-    print("🚀 UISI Shuttle API v2.0 Started")
-    yield
-    print("👋 Server shutting down...")
 
 app = FastAPI(
     title="UISI Shuttle Tracking API v2.0",
