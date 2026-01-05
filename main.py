@@ -1,18 +1,3 @@
-"""
-UISI Shuttle Tracking - Main Backend API v2.0 (FINAL FIX)
-=========================================================
-Perbaikan lengkap:
-- Semua HTTPException memakai status_code & detail
-- require_role => dependency factory (Returns user_id)
-- get_db safe with check_same_thread=False
-- log_audit commits
-- safe access to req.client.host
-- session inserts committed before returning
-- safer websocket send (try/except)
-- robust server run (uvicorn)
-- mount static only if exists
-"""
-
 import os
 import sys
 import math
@@ -21,7 +6,6 @@ import sqlite3
 from contextlib import contextmanager, asynccontextmanager
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple, Callable
-
 import uvicorn
 from passlib.context import CryptContext
 from fastapi import (
@@ -41,7 +25,11 @@ from fastapi import UploadFile, File
 from fastapi.responses import Response
 import shutil
 
-# ==================== CONFIG ====================
+# === CONFIG ===
+# DATABASE: ./backend/shuttle.db
+# ASSETS:   ./assets
+# SCHEDULE: ./assets/jadwal.pdf
+
 PROJECT_ROOT = os.path.dirname(__file__)
 DATABASE = os.path.join(PROJECT_ROOT, "backend", "shuttle.db")
 ASSETS_DIR = os.path.join(PROJECT_ROOT, "assets")
@@ -50,16 +38,13 @@ SCHEDULE_PATH = os.path.join(ASSETS_DIR, "jadwal.pdf")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 os.makedirs(ASSETS_DIR, exist_ok=True)
 
-# DEBUG
 print("PROJECT_ROOT :", PROJECT_ROOT)
 print("DATABASE     :", DATABASE)
 print("ASSETS_DIR   :", ASSETS_DIR)
 print("SCHEDULE_PATH:", SCHEDULE_PATH)
 print()
-# ENDEBUG
 
-# ==================== MODELS ====================
-
+# === MODELS ===
 class LoginRequest(BaseModel):
     email: EmailStr
     password: Optional[str] = None
@@ -766,7 +751,6 @@ async def delete_user_account(
 
 
 # ==================== SCHEDULE MANAGEMENT ENDPOINTS ====================
-
 @app.get("/api/schedule/status")
 async def get_schedule_status():
     """
@@ -883,7 +867,6 @@ async def delete_schedule(
         raise HTTPException(status_code=500, detail=f"Gagal menghapus jadwal: {str(e)}")
 
 # ==================== DRIVER ENDPOINTS ====================
-
 @app.get("/api/driver/bookings")
 async def get_driver_bookings(user_id: int = Depends(require_role("driver"))):
     with get_db() as conn:
@@ -1060,19 +1043,11 @@ if __name__ == "__main__":
     import asyncio
     
     print("""
-╔════════════════════════════════════════════════════════════════════╗
-║                                                                    ║
-║       🚌 UISI SHUTTLE TRACKING API v2.0 🚌                         ║
-║                                                                    ║
-║   Enhanced Security with Bcrypt & RBAC                             ║
-║                                                                    ║
-╚════════════════════════════════════════════════════════════════════╝
-
-🔒 Security Features:
-   ✅ Bcrypt password hashing
-   ✅ Role-based access control (RBAC)
-   ✅ Session token management
-   ✅ Audit logging
+╔═══════════════════════════════════════════════╗
+║                                               ║
+║            SHUTTLE CAR UISI v0.9.0            ║
+║                                               ║
+╚═══════════════════════════════════════════════╝
 """)
     
     # Check if SSL certificates exist
@@ -1088,9 +1063,6 @@ if __name__ == "__main__":
    📚 API Docs: https://{HOST}:{PORT}/docs
    🌍 Frontend: https://{HOST}:{PORT}/
    🚗 Driver: https://{HOST}:{PORT}/driver.html
-
-⚠️  Browser akan warning karena self-signed certificate.
-   Klik 'Advanced' → 'Proceed' untuk lanjut.
 """)
     else:
         print(f"""
@@ -1103,10 +1075,6 @@ if __name__ == "__main__":
 💡 GPS Tracking hanya jalan di:
    ✅ http://localhost:{PORT} (local testing)
    ❌ http://{HOST}:{PORT} (akan di-block browser)
-
-🔧 Untuk enable HTTPS:
-   1. Generate SSL: python generate_ssl.py
-   2. Restart server
 """)
     
     print("""
