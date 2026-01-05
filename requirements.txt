@@ -16,3 +16,12 @@ python-dateutil==2.8.2
 pytest==7.4.3
 httpx==0.25.2
 requests==2.31.0
+
+pydantic[email]
+passlib==1.7.4
+
+# Database Asinkron untuk SQLite
+aiosqlite
+
+# Keamanan: Hashing Password dan JWT
+bcrypt==3.2.2

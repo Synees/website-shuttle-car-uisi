@@ -1,0 +1,289 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	background: #f8fafc;
+}
+
+.navbar {
+	position: relative;
+	background: white;
+	box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+	padding: 15px 20px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.navbar-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 18px;
+	font-weight: bold;
+	color: #667eea;
+}
+
+.navbar-brand i {
+	font-size: 24px;
+}
+
+.btn-jadwal {
+	padding: 8px 15px;
+}
+
+.navbar-user {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+}
+
+.user-info {
+	text-align: right;
+}
+
+.user-info strong {
+	display: block;
+	font-size: 14px;
+}
+
+.user-info small {
+	color: #64748b;
+	font-size: 12px;
+}
+
+.btn-logout {
+	padding: 8px 15px;
+	background: #ef4444;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 14px;
+}
+
+.container {
+	max-width: 1200px;
+	margin: 20px auto;
+	padding: 0 20px;
+}
+
+.card {
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	padding-bottom: 15px;
+	border-bottom: 2px solid #e2e8f0;
+}
+
+.card-title {
+	font-size: 18px;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.btn-jadwal {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	/*font-size: 14px;
+	cursor: pointer;
+	*/
+}
+
+.form-group {
+	margin-bottom: 15px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 600;
+	color: #334155;
+}
+
+.form-group select, .form-group textarea {
+	width: 100%;
+	padding: 12px;
+	border: 2px solid #e2e8f0;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
+.form-group select:focus, .form-group textarea:focus {
+	outline: none;
+	border-color: #667eea;
+}
+
+.btn {
+	padding: 12px 24px;
+	border: none;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s;
+}
+
+.btn-primary {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+}
+
+.btn-primary:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+}
+
+.btn-danger {
+	background: #ef4444;
+	color: white;
+}
+
+.btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+#map {
+	height: 400px;
+	border-radius: 12px;
+	margin-top: 20px;
+}
+
+.booking-list {
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+}
+
+.booking-item {
+	background: #f8fafc;
+	border: 2px solid #e2e8f0;
+	border-radius: 12px;
+	padding: 15px;
+	transition: all 0.3s;
+}
+
+.booking-item:hover {
+	border-color: #667eea;
+}
+
+.booking-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
+.booking-id {
+	font-weight: bold;
+	color: #667eea;
+}
+
+.status-badge {
+	padding: 6px 12px;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.status-pending {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.status-accepted {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.status-driver_arriving {
+	background: #fce7f3;
+	color: #831843;
+}
+
+.status-ongoing {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.status-completed {
+	background: #dcfce7;
+	color: #166534;
+}
+
+.status-cancelled {
+	background: #fee2e2;
+	color: #991b1b;
+}
+
+.booking-route {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 10px 0;
+	font-size: 14px;
+}
+
+.booking-route i {
+	color: #667eea;
+}
+
+.booking-meta {
+	font-size: 12px;
+	color: #64748b;
+	margin-top: 10px;
+}
+
+.alert {
+	padding: 12px;
+	border-radius: 8px;
+	margin-bottom: 20px;
+	display: none;
+}
+
+.alert.show {
+	display: block;
+}
+
+.alert-success {
+	background: #dcfce7;
+	color: #166534;
+	border: 1px solid #bbf7d0;
+}
+
+.alert-error {
+	background: #fee2e2;
+	color: #991b1b;
+	border: 1px solid #fecaca;
+}
+
+.empty-state {
+	text-align: center;
+	padding: 40px;
+	color: #64748b;
+}
+
+.empty-state i {
+	font-size: 48px;
+	margin-bottom: 15px;
+	opacity: 0.3;
+}
+
+
+
