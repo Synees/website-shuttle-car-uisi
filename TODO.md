@@ -1,4 +1,4 @@
-[ ] Perbaiki `test_api.py` <br>
+- [ ] Perbaiki `test_api.py` <br>
 Reproduce: 
 ```bash
 $ python3 main.py [IP] [PORT]
@@ -23,7 +23,7 @@ $ python3 test/test_api.py
 ``` 
 <br>
 
-[ ] Perbaiki `update_coordinates.py` <br>
+- [ ] Perbaiki `update_coordinates.py` <br>
 Apakah perlu:
 ```
 KOORDINAT_BARU = {
@@ -44,9 +44,9 @@ KOORDINAT_BARU = {
 ```
 <br>
 
-[ ] `Admin` Hapus Tipe
-[ ] `Admin` Ubah warna tombol merah ke ungu ke biru-an
-[ ] `Admin` Ubah "Total Booking Hari Ini" ke "Booking yang belum diterima"
-[ ] `Driver` Driver tidak bisa mendeteksi lokasi pengguna
-
-[ ] Tambahkan dokumentasi di dalam kode
+- [ ] `Admin` Hapus Tipe
+- [ ] `Admin` Ubah warna tombol merah ke ungu ke biru-an
+- [ ] `Admin` Ubah "Total Booking Hari Ini" ke "Booking yang belum diterima"
+- [ ] `Driver` Driver tidak bisa mendeteksi lokasi pengguna
+ 
+- [ ] Tambahkan dokumentasi di dalam kode
