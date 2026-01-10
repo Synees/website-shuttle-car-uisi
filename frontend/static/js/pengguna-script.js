@@ -48,7 +48,6 @@ async function viewSchedule() {
 }
 
 // ==================== MAP INITIALIZATION ====================
-
 // Initialize map with location button
 function setupMap() {
 	// Initialize map

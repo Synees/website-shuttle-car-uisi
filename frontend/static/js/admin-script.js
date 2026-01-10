@@ -28,7 +28,15 @@ function switchTab(tab) {
 	event.target.classList.add('active');
 	document.getElementById(`tab-${tab}`).classList.add('active');
 	
-	if (tab === 'locations') loadLocations();
+	if (tab === 'locations') {
+		loadLocations();
+		loadLocationsOnMapAdmin();
+		setTimeout(() => {
+			if (map) {
+				map.invalidateSize();
+			}
+		}, 100);
+	}
 	else if (tab === 'bookings') loadBookings();
 	else if (tab === 'users') loadUsers();
 	else if (tab === 'schedule') loadScheduleStatus();
@@ -90,6 +98,114 @@ function getStatusText(status) {
 	};
 	return map[status] || status;
 }
+
+// ==================== MAP INITIALIZATION ====================
+// Initialize map with location button
+function setupMap() {
+	// Ensure map container has proper height
+	const mapElement = document.getElementById('map');
+	if (mapElement) {
+		mapElement.style.height = '500px';
+		mapElement.style.width = '100%';
+	}
+	
+	// Initialize map
+	initMap(-7.1645, 112.6285, 16);
+	
+	// Force map to invalidate size after a short delay
+	setTimeout(() => {
+		if (map) {
+			map.invalidateSize();
+		}
+	}, 100);
+	
+	// Add location button
+	createLocationButton(() => {
+		getUserLocation(
+			(location) => {
+				showAlert('📍 Lokasi Anda berhasil dideteksi', 'success');
+			},
+			(error) => {
+				handleGeolocationError(error);
+			}
+		);
+	});
+	
+	// Try to get user's current location on init
+	getUserLocation(
+		(location) => {
+			showAlert('📍 Lokasi Anda berhasil dideteksi', 'success');
+		},
+		(error) => {
+			handleGeolocationError(error);
+		}
+	);
+}
+
+// Load locations on map for admin
+async function loadLocationsOnMapAdmin() {
+	try {
+		const response = await fetch(`${API_URL}/api/locations`);
+		const locations = await response.json();
+		
+		// Display on map without select options
+		loadLocationsOnMap(locations, false);
+		
+	} catch (error) {
+		console.error('Error loading locations on map:', error);
+	}
+}
+
+// Update all driver locations
+async function updateAllDriverLocations() {
+	try {
+		const response = await fetch(`${API_URL}/api/driver/all-locations`, {
+			headers: {'Authorization': `Bearer ${token}`}
+		});
+		
+		if (!response.ok) return;
+		
+		const drivers = await response.json();
+		
+		// Update each driver marker
+		drivers.forEach(driver => {
+			if (driver.latitude && driver.longitude) {
+				updateDriverMarker(driver.driver_id, {
+					latitude: driver.latitude,
+					longitude: driver.longitude,
+					speed: driver.speed || 0,
+					heading: driver.heading || 0,
+					timestamp: driver.timestamp
+				});
+			}
+		});
+		
+	} catch (error) {
+		console.error('Error updating driver locations:', error);
+	}
+}
+
+// Handle geolocation errors
+function handleGeolocationError(error) {
+	let message = '';
+	
+	switch(error.code) {
+		case error.PERMISSION_DENIED:
+			message = '❌ Akses lokasi ditolak. Mohon izinkan akses lokasi di browser Anda.';
+			break;
+		case error.POSITION_UNAVAILABLE:
+			message = '⚠️ Informasi lokasi tidak tersedia.';
+			break;
+		case error.TIMEOUT:
+			message = '⏱️ Request lokasi timeout. Coba lagi.';
+			break;
+		default:
+			message = '❌ Gagal mendapatkan lokasi.';
+	}
+	
+	showAlert(message, 'error');
+}
+
 
 // Load locations
 async function loadLocations() {
@@ -177,6 +293,7 @@ async function saveLocation(event) {
 			showAlert(`Lokasi berhasil ${id ? 'diupdate' : 'ditambahkan'}`, 'success');
 			closeLocationModal();
 			loadLocations();
+			loadLocationsOnMapAdmin();
 		} else {
 			showAlert(result.detail || 'Gagal menyimpan lokasi', 'error');
 		}
@@ -199,6 +316,7 @@ async function deleteLocation(id) {
 		if (response.ok && result.success) {
 			showAlert('Lokasi berhasil dihapus', 'success');
 			loadLocations();
+			loadLocationsOnMapAdmin();
 		} else {
 			showAlert(result.detail || 'Gagal menghapus lokasi', 'error');
 		}
@@ -537,6 +655,8 @@ async function deleteSchedule() {
 }
 
 // Initialize
+setupMap();
+loadLocationsOnMapAdmin();
 loadStats();
 loadBookings();
 loadScheduleStatusText(); // Load schedule status on page load
@@ -546,3 +666,8 @@ setInterval(() => {
 	loadStats();
 	loadBookings();
 }, 30000);
+
+// Update driver locations every 10 seconds
+setInterval(() => {
+	updateAllDriverLocations();
+}, 10000);

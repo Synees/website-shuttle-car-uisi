@@ -9,6 +9,101 @@ body {
 	background: #f8fafc;
 }
 
+/* Map Container Fix */
+#map {
+    height: 500px !important;
+    width: 100% !important;
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 1;
+}
+
+/* Ensure map tiles load properly */
+.leaflet-container {
+    height: 100% !important;
+    width: 100% !important;
+}
+
+/* Fix for map in cards */
+.card #map {
+    margin-top: 0;
+}
+
+/* Location button styling */
+.leaflet-control-custom button {
+    background: white !important;
+    width: 34px !important;
+    height: 34px !important;
+    border: none !important;
+    cursor: pointer !important;
+    font-size: 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
+    transition: all 0.3s ease;
+}
+
+.leaflet-control-custom button:hover {
+    background: #f0f0f0 !important;
+    transform: scale(1.1);
+}
+
+.leaflet-control-custom button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* User location marker */
+.user-location-marker {
+    z-index: 1000 !important;
+}
+
+/* Location marker styling */
+.location-marker {
+    z-index: 500 !important;
+}
+
+/* Driver marker styling */
+.driver-marker {
+    z-index: 800 !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Popup styling */
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    padding: 5px;
+}
+
+.leaflet-popup-content {
+    margin: 10px;
+    font-family: inherit;
+}
+
+.leaflet-popup-content strong {
+    color: #dc2626;
+    font-size: 14px;
+}
+
+/* Scale control */
+.leaflet-control-scale {
+    font-size: 11px;
+}
+
 .navbar {
 	background: white;
 	box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -100,6 +195,12 @@ body {
 .tab.active {
 	background: #dc2626;
 	color: white;
+}
+
+#map {
+	height: 400px !important;
+	border-radius: 12px;
+	margin-top: 20px;
 }
 
 .card {
