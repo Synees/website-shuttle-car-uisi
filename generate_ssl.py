@@ -19,11 +19,11 @@ def generate_ssl_certificate():
     """Generate self-signed SSL certificate"""
     
     print("""
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║       🔒 SSL Certificate Generator 🔒                      ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════╗
+║                                               ║
+║          SSL Certificate Generator            ║
+║                                               ║
+╚═══════════════════════════════════════════════╝
 """)
     
     # Check if openssl is available
@@ -36,7 +36,7 @@ def generate_ssl_certificate():
         return False
     
     print("✅ OpenSSL detected\n")
-    print("📝 Generating SSL certificate...\n")
+    print("Generating SSL certificate...\n")
     
     # Generate private key and certificate
     cmd = """
@@ -60,24 +60,8 @@ openssl req -x509 -newkey rsa:4096 -nodes \
         return False
     
     print("\n" + "="*60)
-    print("🎉 SSL CERTIFICATE GENERATED!")
+    print("SSL CERTIFICATE GENERATED!")
     print("="*60)
-    print("\n📄 Files created:")
-    print("   ✅ cert.pem - SSL Certificate")
-    print("   ✅ key.pem  - Private Key")
-    print("\n📝 Next steps:")
-    print("   1. Move files ke root project:")
-    print("      mv cert.pem key.pem ../")
-    print("\n   2. Update main.py untuk gunakan SSL")
-    print("\n   3. Jalankan server:")
-    print("      python main.py 0.0.0.0 8000")
-    print("\n   4. Akses via HTTPS:")
-    print("      https://10.16.132.142:8000")
-    print("\n⚠️  IMPORTANT:")
-    print("   Browser akan warning 'Not Secure' karena self-signed.")
-    print("   Klik 'Advanced' → 'Proceed to site' untuk lanjut.")
-    print("="*60)
-    
     return True
 
 if __name__ == "__main__":

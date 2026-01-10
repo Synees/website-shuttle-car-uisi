@@ -1,6 +1,43 @@
 # Website Shuttle Car UISI
 Sistem tracking shuttle kampus real-time untuk **Universitas Internasional Semen Indonesia (UISI)**
 
+## Struktur Folder
+```
+website-shuttle-car-uisi/
+├── .venv
+├── assets
+│   └── jadwal.pdf
+├── backend
+│   └── setup_database.py
+├── frontend
+│   ├── admin.html
+│   ├── driver.html
+│   ├── login.html
+│   ├── pengguna.html
+│   └── static
+│       ├── css
+│       │   ├── admin-style.css
+│       │   ├── driver-style.css
+│       │   ├── login-style.css
+│       │   └── pengguna-style.css
+│       └── js
+│           ├── admin-script.js
+│           ├── driver-script.js
+│           ├── login-script.js
+│           ├── map-script.js
+│           └── pengguna-script.js
+├── generate_ssl.py
+├── main.py
+├── README.md
+├── requirements.txt
+├── scripts
+│   ├── backup_database.py
+│   ├── reset_database.py
+│   └── update_coordinates.py
+└── TODO.md
+
+```
+
 ## Setup
 ### Step 1: Install Dependencies
 ```bash

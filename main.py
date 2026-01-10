@@ -25,6 +25,8 @@ from fastapi import UploadFile, File
 from fastapi.responses import Response
 import shutil
 
+APP_VERSION = "v0.3.0"
+
 # === CONFIG ===
 # DATABASE: ./backend/shuttle.db
 # ASSETS:   ./assets
@@ -83,7 +85,6 @@ class BookingStatusUpdate(BaseModel):
     status: str
 
 # ==================== DATABASE CONTEXT ====================
-
 @contextmanager
 def get_db():
     # Use check_same_thread=False to allow usage from multiple threads (uvicorn workers)
@@ -96,7 +97,6 @@ def get_db():
         conn.close()
 
 # ==================== UTILITIES ====================
-
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
@@ -126,8 +126,7 @@ def log_audit(conn, user_id: int, action: str, entity_type: str, entity_id: int 
     conn.commit()
 
 # ==================== AUTH DEPENDENCIES ====================
-
-async def get_current_user(authorization: Optional[str] = Header(None)) -> Tuple[int, str]:
+async def get_current_user(authorization: Optional[str] = Header(None, alias="Authorization")) -> Tuple[int, str]:
     """
     Validate Bearer token and return (user_id, role_name).
     Raises 401 when not authenticated.
@@ -137,6 +136,8 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Tuple
 
     token = authorization.replace("Bearer ", "", 1)
     now_iso = datetime.now().isoformat()
+
+    print("AUTH HEADER:", authorization)
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -169,7 +170,6 @@ def require_role(*allowed_roles: str) -> Callable:
     return role_checker
 
 # ==================== WEBSOCKET MANAGER ====================
-
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -210,16 +210,16 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # ==================== FASTAPI APP ====================
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not os.path.exists(DATABASE):
-        print("⚠️  WARNING: Database not found! Run: python backend/setup_database2.py")
+        print("⚠️  WARNING: Database not found! Run: python backend/setup_database.py")
+    yield
 
 app = FastAPI(
-    title="UISI Shuttle Tracking API v2.0",
+    title=f"Shuttle Car UISI {APP_VERSION}",
     description="Secure shuttle tracking system with role-based access control",
-    version="2.0.0",
+    version=APP_VERSION,
     lifespan=lifespan
 )
 
@@ -239,7 +239,6 @@ else:
     print(f"⚠️ Static directory not found: {static_dir} (skipping mount)")
 
 # ==================== AUTH ENDPOINTS ====================
-
 @app.post("/api/auth/login")
 async def login(request: LoginRequest, req: Request):
     """
@@ -369,7 +368,6 @@ async def get_current_user_info(user_data: Tuple = Depends(get_current_user)):
         return dict(user)
 
 # ==================== PENGGUNA ENDPOINTS ====================
-
 @app.post("/api/bookings")
 async def create_booking(booking: BookingRequest, user_id: int = Depends(require_role("pengguna")), req: Request = None):
     """Pengguna: Buat booking baru"""
@@ -494,7 +492,6 @@ async def get_locations():
         return [dict(row) for row in cursor.fetchall()]
 
 # ==================== ADMIN ENDPOINTS ====================
-
 @app.post("/api/admin/locations")
 async def create_location(location: LocationCreate, user_id: int = Depends(require_role("admin")), req: Request = None):
     with get_db() as conn:
@@ -695,20 +692,12 @@ async def delete_user_account(
         if not user:
             raise HTTPException(404, "User not found")
         
-        # Prevent deleting admin/driver accounts
         if user["role"] in ["admin", "driver"]:
             raise HTTPException(403, "Cannot delete admin or driver accounts")
         
-        # Delete user dan related data (CASCADE)
         try:
-            # 1. Delete sessions
             cursor.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
-            
-            # 2. Delete notifications
             cursor.execute("DELETE FROM notifications WHERE user_id = ?", (user_id,))
-            
-            # 3. Update bookings - set user_id to NULL atau delete
-            # (Opsional: Keep booking history tapi anonymize)
             cursor.execute("""
                 UPDATE bookings 
                 SET status = 'cancelled',
@@ -717,11 +706,8 @@ async def delete_user_account(
                     cancelled_at = ?
                 WHERE user_id = ? AND status NOT IN ('completed', 'cancelled')
             """, (admin_id, datetime.now().isoformat(), user_id))
-            
-            # 4. Delete user
             cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
-            
-            # 5. Log audit
+
             log_audit(
                 conn, 
                 admin_id, 
@@ -769,31 +755,26 @@ async def upload_schedule(
     """
     Admin: Upload file jadwal PDF
     """
-    # Validasi file type
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="File harus berformat PDF")
     
     if file.content_type != 'application/pdf':
         raise HTTPException(status_code=400, detail="File harus berformat PDF")
     
-    # Validasi ukuran file (max 10MB)
-    file.file.seek(0, 2)  # Seek to end
-    file_size = file.file.tell()  # Get position (file size)
-    file.file.seek(0)  # Reset to beginning
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
     
-    if file_size > 10 * 1024 * 1024:  # 10MB
+    if file_size > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Ukuran file maksimal 10MB")
     
     try:
-        # Hapus file lama jika ada
         if os.path.isfile(SCHEDULE_PATH):
             os.remove(SCHEDULE_PATH)
         
-        # Simpan file baru
         with open(SCHEDULE_PATH, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # Log audit
         with get_db() as conn:
             try:
                 client_ip = req.client.host if req and req.client else None
@@ -990,6 +971,9 @@ async def websocket_endpoint(websocket: WebSocket):
 # ==================== SERVE FRONTEND ====================
 @app.get("/")
 async def serve_index():
+    """
+    Halaman login
+    """
     index_path = os.path.join(PROJECT_ROOT, "frontend", "login.html")
     if not os.path.isfile(index_path):
         raise HTTPException(status_code=404, detail="Frontend not found")
@@ -997,6 +981,9 @@ async def serve_index():
 
 @app.get("/pengguna.html")
 async def serve_pengguna():
+    """
+    Halaman pengguna
+    """
     file_path = os.path.join(PROJECT_ROOT, "frontend", "pengguna.html")
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -1004,6 +991,9 @@ async def serve_pengguna():
 
 @app.get("/admin.html")
 async def serve_admin():
+    """
+    Halaman admin
+    """
     file_path = os.path.join(PROJECT_ROOT, "frontend", "admin.html")
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -1011,6 +1001,9 @@ async def serve_admin():
 
 @app.get("/driver.html")
 async def serve_driver():
+    """
+    Halaman driver
+    """
     file_path = os.path.join(PROJECT_ROOT, "frontend", "driver.html")
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -1018,13 +1011,14 @@ async def serve_driver():
 
 @app.get("/config")
 def get_config():
+    """
+    config host dan port
+    """
     host = os.environ.get("UISI_HOST", "127.0.0.1")
     port = int(os.environ.get("UISI_PORT", "8000"))
     return {"HOST": host, "PORT": port}
 
 # ==================== RUN SERVER ====================
-# ==================== RUN SERVER (MODIFIED - TAMBAHKAN DI AKHIR main.py) ====================
-
 if len(sys.argv) < 3:
     print("Usage: python main.py [HOST] [PORT]")
     print("Example: python main.py 0.0.0.0 8000")
@@ -1037,10 +1031,10 @@ if __name__ == "__main__":
     import uvicorn
     import asyncio
     
-    print("""
+    print(f"""
 ╔═══════════════════════════════════════════════╗
 ║                                               ║
-║            SHUTTLE CAR UISI v0.9.0            ║
+║            {app.title}            ║
 ║                                               ║
 ╚═══════════════════════════════════════════════╝
 """)
@@ -1052,28 +1046,22 @@ if __name__ == "__main__":
     
     if use_ssl:
         print(f"""
-🔒 SSL/HTTPS Mode ENABLED
-   📡 Host: {HOST}
-   🔌 Port: {PORT}
-   📚 API Docs: https://{HOST}:{PORT}/docs
-   🌍 Frontend: https://{HOST}:{PORT}/
-   🚗 Driver: https://{HOST}:{PORT}/driver.html
+SSL/HTTPS Mode ENABLED
+   Host: {HOST}
+   Port: {PORT}
+   API Docs: https://{HOST}:{PORT}/docs
+   Frontend: https://{HOST}:{PORT}/
+   Driver: https://{HOST}:{PORT}/driver.html
 """)
     else:
         print(f"""
-⚠️  Running in HTTP mode (SSL certificates not found)
-   📡 Host: {HOST}
-   🔌 Port: {PORT}
-   📚 API Docs: http://{HOST}:{PORT}/docs
-   🌍 Frontend: http://{HOST}:{PORT}/
-
-💡 GPS Tracking hanya jalan di:
-   ✅ http://localhost:{PORT} (local testing)
-   ❌ http://{HOST}:{PORT} (akan di-block browser)
+Error: Running in HTTP mode (SSL certificates not found)
+       Run: python generate_ssl.py
 """)
+        sys.exit(1)
     
     print("""
-🔑 Default Accounts:
+   * Default Accounts:
    Admin  : admin@uisi.ac.id / admin123
    Driver : driver1@uisi.ac.id / driver123
    Student: [email]@student.uisi.ac.id (auto-register)

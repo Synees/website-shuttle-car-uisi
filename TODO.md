@@ -47,6 +47,8 @@ KOORDINAT_BARU = {
 - [ ] `Admin` Hapus Tipe
 - [ ] `Admin` Ubah warna tombol merah ke ungu ke biru-an
 - [ ] `Admin` Ubah "Total Booking Hari Ini" ke "Booking yang belum diterima"
+- [ ] `Admin` Tambah peta di halaman admin
 - [ ] `Driver` Driver tidak bisa mendeteksi lokasi pengguna
+- [ ] `Driver` Driver tidak terdeteksi di peta
  
 - [ ] Tambahkan dokumentasi di dalam kode
