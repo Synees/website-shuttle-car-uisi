@@ -22,6 +22,24 @@ function initMap(centerLat = -7.1645, centerLng = 112.6285, zoom = 16) {
 	// Add map controls
 	L.control.scale().addTo(map);
 	
+	if (!document.getElementById('driver-marker-styles')) {
+		const style = document.createElement('style');
+		style.id = 'driver-marker-styles';
+		style.textContent = `
+			.driver-marker-icon {
+				width: 32px !important;
+				height: 32px !important;
+				margin-left: -16px !important;
+				margin-top: -16px !important;
+				font-size: 24px;
+				line-height: 32px;
+				text-align: center;
+				filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+			}
+		`;
+		document.head.appendChild(style);
+	}
+
 	return map;
 }
 
@@ -208,37 +226,56 @@ function loadLocationsOnMap(locations, addToSelect = false, fromSelectId = null,
 	});
 }
 
-// Update driver marker on map
 function updateDriverMarker(driverId, location) {
 	// Remove old marker if exists
 	if (driverMarkers[driverId]) {
 		map.removeLayer(driverMarkers[driverId]);
 	}
 	
-	// Create car icon for driver
 	const driverIcon = L.divIcon({
-		className: 'driver-marker',
-		html: `
-			<div style="
-				font-size: 24px;
-				transform: rotate(${location.heading || 0}deg);
-				filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-			">
-				🚗
-			</div>
-		`,
+		className: 'driver-marker-icon',
+		html: '🚗',
+		// html: `
+		// 	<div style="
+		// 		position: relative;
+		// 		width: 32px;
+		// 		height: 32px;
+		// 	">
+		// 		<div style="
+		// 			position: absolute;
+		// 			top: 50%;
+		// 			left: 50%;
+		// 			transform: translate(-50%, -50%) rotate(${location.heading || 0}deg);
+		// 			font-size: 24px;
+		// 			line-height: 1;
+		// 			filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+		// 		">
+		// 			🚗
+		// 		</div>
+		// 	</div>
+		// `,
 		iconSize: [32, 32],
-		iconAnchor: [16, 16]
+		iconAnchor: [16, 16],
+		popupAnchor: [0, -16]
 	});
 	
 	// Add driver marker
-	const marker = L.marker([location.latitude, location.longitude], { icon: driverIcon })
-		.addTo(map)
-		.bindPopup(`
-			<strong>🚗 Driver</strong><br>
-			Kecepatan: ${Math.round(location.speed || 0)} km/h<br>
-			<small>Update: ${new Date(location.timestamp).toLocaleTimeString('id-ID')}</small>
-		`);
+	const marker = L.marker([location.latitude, location.longitude], { 
+		icon: driverIcon,
+		rotationAngle: location.heading || 0
+	}).addTo(map)
+
+	const markerElement = marker._icon;
+	if (markerElement && location.heading !== undefined) {
+		markerElement.style.transform += ` rotate(${location.heading}deg)`;
+	}
+
+	marker.bindPopup(`
+		<strong>🚗 Driver #${driverId}</strong><br>
+		Kecepatan: ${Math.round(location.speed || 0)} km/h<br>
+		Heading: ${Math.round(location.heading || 0)}°<br>
+		<small>Update: ${new Date(location.timestamp).toLocaleTimeString('id-ID')}</small>
+	`);
 	
 	driverMarkers[driverId] = marker;
 }

@@ -1,28 +1,3 @@
-- [ ] Perbaiki `test_api.py` <br>
-Reproduce: 
-```bash
-$ python3 main.py [IP] [PORT]
-```
-```bash
-$ python3 test/test_api.py
-
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║       🧪 UISI SHUTTLE API - TEST SUITE 🧪                 ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-
-
-============================================================
-  TEST 1: Server Connection
-============================================================
-❌ Cannot connect to server!
-   Make sure backend is running: python main.py
-
-❌ Cannot continue - server not running
-``` 
-<br>
-
 - [ ] Perbaiki `update_coordinates.py` <br>
 Apakah perlu:
 ```
@@ -49,6 +24,9 @@ KOORDINAT_BARU = {
 - [ ] `Admin` Ubah "Total Booking Hari Ini" ke "Booking yang belum diterima"
 - [x] `Admin` Tambah peta di halaman admin
 - [ ] `Driver` Driver tidak bisa mendeteksi lokasi pengguna
-- [ ] `Driver` Driver tidak terdeteksi di peta
+
+- [x] `driver` driver tidak terdeteksi di peta
+- [x] `admin` driver tidak terdeteksi di peta
+- [ ] `pengguna` driver tidak terdeteksi di peta
  
 - [ ] Tambahkan dokumentasi di dalam kode

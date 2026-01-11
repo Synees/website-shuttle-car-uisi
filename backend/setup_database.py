@@ -158,7 +158,7 @@ def create_database():
     
     cursor.execute("CREATE INDEX idx_locations_status ON locations(status)")
     cursor.execute("CREATE INDEX idx_locations_type ON locations(type)")
-    
+
     # ==================== TABEL BOOKINGS ====================
     print("   📋 Creating table: bookings")
     cursor.execute("""
@@ -228,7 +228,7 @@ def create_database():
     cursor.execute("""
         CREATE TABLE location_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            trip_id INTEGER NOT NULL,
+            trip_id INTEGER NULL,
             driver_id INTEGER NOT NULL,
             latitude REAL NOT NULL,
             longitude REAL NOT NULL,

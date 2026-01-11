@@ -492,27 +492,88 @@ async def get_locations():
         return [dict(row) for row in cursor.fetchall()]
 
 # ==================== ADMIN ENDPOINTS ====================
-@app.post("/api/admin/locations")
-async def create_location(location: LocationCreate, user_id: int = Depends(require_role("admin")), req: Request = None):
+@app.post("/api/driver/location")
+async def submit_driver_location(data: LocationData, user_id: int = Depends(require_role("driver"))):
+    """
+    Submit lokasi GPS driver
+    
+    PERUBAHAN: Driver bisa kirim lokasi meskipun tidak ada active trip
+    Ini penting agar admin dan user bisa tracking driver kapan saja
+    """
     with get_db() as conn:
         cursor = conn.cursor()
         now = datetime.now().isoformat()
-
+        
+        # ✅ PERUBAHAN: Cek apakah ada active trip (optional)
         cursor.execute("""
-            INSERT INTO locations (name, description, latitude, longitude, type, address, status, created_at, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
-        """, (location.name, location.description, location.latitude, location.longitude,
-              location.type, location.address, now, user_id))
-
-        location_id = cursor.lastrowid
-        try:
-            client_ip = req.client.host if req and req.client else None
-        except:
-            client_ip = None
-        log_audit(conn, user_id, "create", "location", location_id, None, location.name, client_ip)
+            SELECT id FROM trips WHERE driver_id = ? AND status = 'ongoing'
+            ORDER BY start_time DESC LIMIT 1
+        """, (user_id,))
+        trip = cursor.fetchone()
+        
+        # ✅ PERUBAHAN: Simpan lokasi dengan atau tanpa trip_id
+        trip_id = trip["id"] if trip else None
+        
+        cursor.execute("""
+            INSERT INTO location_history (trip_id, driver_id, latitude, longitude, speed, heading, accuracy, altitude, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (trip_id, user_id, data.latitude, data.longitude, data.speed, data.heading, data.accuracy, data.altitude, now))
         conn.commit()
 
-        return {"success": True, "location_id": location_id}
+        # ✅ PERUBAHAN: Broadcast ke WebSocket tetap jalan
+        try:
+            await manager.broadcast({
+                "type": "location_update",
+                "driver_id": user_id,
+                "latitude": data.latitude,
+                "longitude": data.longitude,
+                "speed": data.speed,
+                "heading": data.heading,
+                "timestamp": now
+            })
+        except Exception as e:
+            print(f"WebSocket broadcast error: {e}")
+            pass
+
+        return {"success": True, "has_active_trip": trip is not None}
+
+@app.get("/api/driver/all-locations")
+async def get_all_driver_locations(user_id: int = Depends(require_role("admin"))):
+    """
+    Admin: Get lokasi terkini dari semua driver yang sedang aktif (Versi Sederhana)
+    """
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Get semua driver yang pernah kirim lokasi dalam 5 menit terakhir
+        cursor.execute("""
+            SELECT DISTINCT driver_id
+            FROM location_history
+            WHERE timestamp >= datetime('now', '-5 minutes')
+        """)
+        
+        driver_ids = [row["driver_id"] for row in cursor.fetchall()]
+        
+        # Untuk setiap driver, ambil lokasi terakhirnya
+        result = []
+        for driver_id in driver_ids:
+            cursor.execute("""
+                SELECT 
+                    lh.*,
+                    u.name as driver_name,
+                    u.phone as driver_phone
+                FROM location_history lh
+                LEFT JOIN users u ON lh.driver_id = u.id
+                WHERE lh.driver_id = ?
+                ORDER BY lh.timestamp DESC
+                LIMIT 1
+            """, (driver_id,))
+            
+            loc = cursor.fetchone()
+            if loc:
+                result.append(dict(loc))
+        
+        return result
 
 @app.put("/api/admin/locations/{location_id}")
 async def update_location(location_id: int, location: LocationCreate, user_id: int = Depends(require_role("admin")), req: Request = None):
@@ -910,39 +971,6 @@ async def update_booking_status(
         log_audit(conn, user_id, "status_update", "booking", booking_id, old_status, status, client_ip)
         conn.commit()
         return {"success": True, "status": status}
-
-@app.post("/api/driver/location")
-async def submit_driver_location(data: LocationData, user_id: int = Depends(require_role("driver"))):
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id FROM trips WHERE driver_id = ? AND status = 'ongoing'
-            ORDER BY start_time DESC LIMIT 1
-        """, (user_id,))
-        trip = cursor.fetchone()
-        if not trip:
-            raise HTTPException(status_code=400, detail="No active trip")
-
-        now = datetime.now().isoformat()
-        cursor.execute("""
-            INSERT INTO location_history (trip_id, driver_id, latitude, longitude, speed, heading, accuracy, altitude, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (trip["id"], user_id, data.latitude, data.longitude, data.speed, data.heading, data.accuracy, data.altitude, now))
-        conn.commit()
-
-        try:
-            await manager.broadcast({
-                "type": "location_update",
-                "driver_id": user_id,
-                "latitude": data.latitude,
-                "longitude": data.longitude,
-                "speed": data.speed,
-                "timestamp": now
-            })
-        except Exception:
-            pass
-
-        return {"success": True}
 
 @app.get("/api/driver/current-location/{driver_id}")
 async def get_driver_location(driver_id: int):

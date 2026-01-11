@@ -3,6 +3,9 @@ const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user') || '{}');
 
 let ws = null;
+// ✅ PERUBAHAN: Tambah variable untuk tracking driver polling
+let driverTrackingInterval = null;
+let activeDriverIds = new Set(); // Set untuk menyimpan ID driver yang sedang aktif
 
 // Check auth
 if (!token || user.role !== 'pengguna') {
@@ -22,6 +25,10 @@ function showAlert(message, type = 'error') {
 
 function logout() {
 	if (ws) ws.close();
+	// ✅ PERUBAHAN: Clear interval saat logout
+	if (driverTrackingInterval) {
+		clearInterval(driverTrackingInterval);
+	}
 	localStorage.clear();
 	window.location.href = '/';
 }
@@ -193,6 +200,8 @@ async function loadMyBookings() {
 					<p>Belum ada pemesanan</p>
 				</div>
 			`;
+			// ✅ PERUBAHAN: Clear active drivers jika tidak ada booking
+			activeDriverIds.clear();
 			return;
 		}
 		
@@ -221,7 +230,7 @@ async function loadMyBookings() {
 			</div>
 		`).join('');
 		
-		// Track active drivers
+		// ✅ PERUBAHAN: Panggil fungsi tracking driver setelah render booking
 		trackActiveDrivers(bookings);
 		
 	} catch (error) {
@@ -292,17 +301,43 @@ function getStatusText(status) {
 
 // ==================== DRIVER TRACKING ====================
 
+// ✅ PERUBAHAN: Fungsi tracking driver yang lebih robust
 // Track active drivers on map
 function trackActiveDrivers(bookings) {
+	// Filter booking yang aktif dan punya driver
 	const activeBookings = bookings.filter(b => 
 		['accepted', 'driver_arriving', 'ongoing'].includes(b.status) && b.driver_id
 	);
 	
-	activeBookings.forEach(booking => {
-		fetchDriverLocation(booking.driver_id);
+	// Update set active drivers
+	const newActiveDriverIds = new Set(activeBookings.map(b => b.driver_id));
+	
+	// ✅ PERUBAHAN: Hapus marker driver yang sudah tidak aktif
+	activeDriverIds.forEach(driverId => {
+		if (!newActiveDriverIds.has(driverId)) {
+			// Driver tidak lagi aktif, hapus marker-nya
+			if (driverMarkers[driverId]) {
+				map.removeLayer(driverMarkers[driverId]);
+				delete driverMarkers[driverId];
+			}
+		}
 	});
+	
+	// Update active driver IDs
+	activeDriverIds = newActiveDriverIds;
+	
+	// ✅ PERUBAHAN: Fetch lokasi untuk setiap driver aktif
+	activeDriverIds.forEach(driverId => {
+		fetchDriverLocation(driverId);
+	});
+	
+	// ✅ PERUBAHAN: Log untuk debugging
+	if (activeDriverIds.size > 0) {
+		console.log(`📍 Tracking ${activeDriverIds.size} active driver(s):`, Array.from(activeDriverIds));
+	}
 }
 
+// ✅ PERUBAHAN: Fetch dengan error handling yang lebih baik
 // Fetch and display driver location
 async function fetchDriverLocation(driverId) {
 	try {
@@ -310,21 +345,53 @@ async function fetchDriverLocation(driverId) {
 			headers: {'Authorization': `Bearer ${token}`}
 		});
 		
-		if (!response.ok) return;
+		if (!response.ok) {
+			// ✅ PERUBAHAN: Jika 404, driver belum kirim lokasi
+			if (response.status === 404) {
+				console.log(`ℹ️ Driver ${driverId} belum mengirim lokasi GPS`);
+			}
+			return;
+		}
 		
 		const location = await response.json();
-		updateDriverMarker(driverId, location);
+		
+		// ✅ PERUBAHAN: Validasi data lokasi sebelum update marker
+		if (location && location.latitude && location.longitude) {
+			updateDriverMarker(driverId, {
+				latitude: location.latitude,
+				longitude: location.longitude,
+				speed: location.speed || 0,
+				heading: location.heading || 0,
+				timestamp: location.timestamp
+			});
+			console.log(`✅ Driver ${driverId} location updated:`, location.latitude, location.longitude);
+		}
 		
 	} catch (error) {
-		console.error('Error fetching driver location:', error);
+		console.error(`❌ Error fetching driver ${driverId} location:`, error);
 	}
 }
 
+// ✅ PERUBAHAN: Fungsi track driver yang lebih informatif
 // Track specific driver
 function trackDriver(driverId) {
+	// Coba track di map
 	const found = trackDriverOnMap(driverId, () => {
-		fetchDriverLocation(driverId);
+		// Callback jika driver tidak ditemukan di map
 		showAlert('🔍 Mencari lokasi driver...', 'info');
+		
+		// Fetch lokasi driver
+		fetchDriverLocation(driverId).then(() => {
+			// Tunggu sebentar lalu coba track lagi
+			setTimeout(() => {
+				const retryFound = trackDriverOnMap(driverId);
+				if (retryFound) {
+					showAlert('📍 Driver ditemukan di peta', 'success');
+				} else {
+					showAlert('⚠️ Driver belum mengirim lokasi GPS. Pastikan driver sudah mengaktifkan GPS tracking.', 'error');
+				}
+			}, 1000);
+		});
 	});
 	
 	if (found) {
@@ -332,66 +399,124 @@ function trackDriver(driverId) {
 	}
 }
 
+// ✅ PERUBAHAN: Fungsi untuk start continuous tracking
+function startDriverTracking() {
+	// Stop existing interval jika ada
+	if (driverTrackingInterval) {
+		clearInterval(driverTrackingInterval);
+	}
+	
+	// Update lokasi driver setiap 10 detik
+	driverTrackingInterval = setInterval(() => {
+		if (activeDriverIds.size > 0) {
+			console.log(`🔄 Auto-updating ${activeDriverIds.size} driver location(s)...`);
+			activeDriverIds.forEach(driverId => {
+				fetchDriverLocation(driverId);
+			});
+		}
+	}, 10000); // 10 detik
+	
+	console.log('✅ Driver tracking started (10s interval)');
+}
+
+// ✅ PERUBAHAN: Fungsi untuk stop tracking
+function stopDriverTracking() {
+	if (driverTrackingInterval) {
+		clearInterval(driverTrackingInterval);
+		driverTrackingInterval = null;
+		console.log('⏹️ Driver tracking stopped');
+	}
+}
+
 // ==================== WEBSOCKET ====================
 
+// ✅ PERUBAHAN: WebSocket dengan reconnect yang lebih baik
 // WebSocket for real-time updates
 function initWebSocket() {
 	const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 	const wsUrl = `${protocol}//${window.location.host}/ws/tracking`;
 	
-	ws = new WebSocket(wsUrl);
-	
-	ws.onopen = () => {
-		console.log('✅ WebSocket connected');
-	};
-	
-	ws.onmessage = (event) => {
-		try {
-			const data = JSON.parse(event.data);
-			
-			if (data.type === 'location_update' && data.driver_id) {
-				updateDriverMarker(data.driver_id, {
-					latitude: data.latitude,
-					longitude: data.longitude,
-					speed: data.speed,
-					heading: data.heading || 0,
-					timestamp: data.timestamp
-				});
-			} else if (data.type === 'new_booking' || data.type === 'booking_update') {
-				loadMyBookings();
+	try {
+		ws = new WebSocket(wsUrl);
+		
+		ws.onopen = () => {
+			console.log('✅ WebSocket connected');
+		};
+		
+		ws.onmessage = (event) => {
+			try {
+				const data = JSON.parse(event.data);
+				
+				// ✅ PERUBAHAN: Handle location update dengan logging
+				if (data.type === 'location_update' && data.driver_id) {
+					console.log(`📡 WebSocket: Driver ${data.driver_id} location update received`);
+					
+					// Update hanya jika driver sedang aktif
+					if (activeDriverIds.has(data.driver_id)) {
+						updateDriverMarker(data.driver_id, {
+							latitude: data.latitude,
+							longitude: data.longitude,
+							speed: data.speed,
+							heading: data.heading || 0,
+							timestamp: data.timestamp
+						});
+					}
+				} else if (data.type === 'new_booking' || data.type === 'booking_update') {
+					console.log('📡 WebSocket: Booking update received');
+					loadMyBookings();
+				}
+			} catch (error) {
+				console.error('❌ WebSocket message error:', error);
 			}
-		} catch (error) {
-			console.error('WebSocket message error:', error);
-		}
-	};
-	
-	ws.onerror = (error) => {
-		console.error('WebSocket error:', error);
-	};
-	
-	ws.onclose = () => {
-		console.log('WebSocket disconnected, reconnecting...');
+		};
+		
+		ws.onerror = (error) => {
+			console.error('❌ WebSocket error:', error);
+		};
+		
+		ws.onclose = () => {
+			console.log('📡 WebSocket disconnected, reconnecting in 5s...');
+			setTimeout(initWebSocket, 5000);
+		};
+	} catch (error) {
+		console.error('❌ WebSocket init error:', error);
+		// Retry setelah 5 detik jika gagal
 		setTimeout(initWebSocket, 5000);
-	};
+	}
 }
 
 // ==================== INITIALIZATION ====================
 
+// ✅ PERUBAHAN: Inisialisasi dengan tracking driver
 // Initialize
 setupMap();
 loadLocations();
-loadMyBookings();
+loadMyBookings(); // Ini akan trigger trackActiveDrivers()
+
+// ✅ PERUBAHAN: Start tracking interval setelah load pertama
+setTimeout(() => {
+	startDriverTracking();
+}, 2000); // Tunggu 2 detik setelah page load
+
+// Init WebSocket
 initWebSocket();
 
-// Refresh bookings and driver locations every 30 seconds
+// ✅ PERUBAHAN: Refresh bookings setiap 30 detik (tetap ada untuk backup)
 setInterval(() => {
-	loadMyBookings();
+	loadMyBookings(); // Ini akan update active drivers juga
 }, 30000);
 
-// Update driver locations every 10 seconds
-setInterval(() => {
-	const driverIds = Object.keys(driverMarkers);
-	driverIds.forEach(driverId => {
-		fetchDriverLocation(parseInt(driverId));
-	});
-}, 10000);
+// ✅ PERUBAHAN: Hapus interval update driver yang lama, karena sudah diganti dengan startDriverTracking()
+// Kode lama yang dihapus:
+// setInterval(() => {
+//   const driverIds = Object.keys(driverMarkers);
+//   driverIds.forEach(driverId => {
+//     fetchDriverLocation(parseInt(driverId));
+//   });
+// }, 10000);
+
+// ✅ PERUBAHAN: Cleanup saat page unload
+window.addEventListener('beforeunload', () => {
+	stopDriverTracking();
+	if (ws) ws.close();
+});
