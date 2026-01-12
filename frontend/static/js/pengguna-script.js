@@ -3,7 +3,6 @@ const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user') || '{}');
 
 let ws = null;
-// ✅ PERUBAHAN: Tambah variable untuk tracking driver polling
 let driverTrackingInterval = null;
 let activeDriverIds = new Set(); // Set untuk menyimpan ID driver yang sedang aktif
 
@@ -25,7 +24,6 @@ function showAlert(message, type = 'error') {
 
 function logout() {
 	if (ws) ws.close();
-	// ✅ PERUBAHAN: Clear interval saat logout
 	if (driverTrackingInterval) {
 		clearInterval(driverTrackingInterval);
 	}
@@ -200,8 +198,8 @@ async function loadMyBookings() {
 					<p>Belum ada pemesanan</p>
 				</div>
 			`;
-			// ✅ PERUBAHAN: Clear active drivers jika tidak ada booking
 			activeDriverIds.clear();
+			clearDriverMarkers();
 			return;
 		}
 		
@@ -230,7 +228,6 @@ async function loadMyBookings() {
 			</div>
 		`).join('');
 		
-		// ✅ PERUBAHAN: Panggil fungsi tracking driver setelah render booking
 		trackActiveDrivers(bookings);
 		
 	} catch (error) {
@@ -251,12 +248,14 @@ function getBookingActions(booking) {
 		`;
 	}
 	
-	// Show track driver button for active bookings
+	// Driver akan otomatis ter-track di map tanpa perlu klik tombol
+	
 	if (booking.driver_id && ['accepted', 'driver_arriving', 'ongoing'].includes(booking.status)) {
 		actions += `
-			<button class="btn btn-primary" onclick="trackDriver(${booking.driver_id})" style="margin-top: 10px; margin-left: 5px;">
-				<i class="fas fa-map-marker-alt"></i> Lacak Driver
-			</button>
+			<div style="margin-top: 10px; padding: 8px; background: #e3f2fd; border-radius: 8px; font-size: 13px;">
+				<i class="fas fa-satellite-dish" style="color: #1976d2;"></i>
+				<span style="color: #1565c0;">Driver sedang dilacak secara otomatis di peta</span>
+			</div>
 		`;
 	}
 	
@@ -301,7 +300,6 @@ function getStatusText(status) {
 
 // ==================== DRIVER TRACKING ====================
 
-// ✅ PERUBAHAN: Fungsi tracking driver yang lebih robust
 // Track active drivers on map
 function trackActiveDrivers(bookings) {
 	// Filter booking yang aktif dan punya driver
@@ -312,41 +310,41 @@ function trackActiveDrivers(bookings) {
 	// Update set active drivers
 	const newActiveDriverIds = new Set(activeBookings.map(b => b.driver_id));
 	
-	// ✅ PERUBAHAN: Hapus marker driver yang sudah tidak aktif
 	activeDriverIds.forEach(driverId => {
 		if (!newActiveDriverIds.has(driverId)) {
 			// Driver tidak lagi aktif, hapus marker-nya
 			if (driverMarkers[driverId]) {
 				map.removeLayer(driverMarkers[driverId]);
 				delete driverMarkers[driverId];
+				console.log(`🗑️ Removed inactive driver marker: ${driverId}`);
 			}
 		}
 	});
 	
+	const hasNewDriver = activeBookings.length > 0 && newActiveDriverIds.size > activeDriverIds.size;
+	
 	// Update active driver IDs
 	activeDriverIds = newActiveDriverIds;
 	
-	// ✅ PERUBAHAN: Fetch lokasi untuk setiap driver aktif
 	activeDriverIds.forEach(driverId => {
-		fetchDriverLocation(driverId);
+		fetchDriverLocation(driverId, hasNewDriver);
 	});
 	
-	// ✅ PERUBAHAN: Log untuk debugging
 	if (activeDriverIds.size > 0) {
-		console.log(`📍 Tracking ${activeDriverIds.size} active driver(s):`, Array.from(activeDriverIds));
+		console.log(`📍 Auto-tracking ${activeDriverIds.size} active driver(s):`, Array.from(activeDriverIds));
+	} else {
+		console.log(`ℹ️ No active drivers to track`);
 	}
 }
 
-// ✅ PERUBAHAN: Fetch dengan error handling yang lebih baik
 // Fetch and display driver location
-async function fetchDriverLocation(driverId) {
+async function fetchDriverLocation(driverId, shouldCenter = false) {
 	try {
 		const response = await fetch(`${API_URL}/api/driver/current-location/${driverId}`, {
 			headers: {'Authorization': `Bearer ${token}`}
 		});
 		
 		if (!response.ok) {
-			// ✅ PERUBAHAN: Jika 404, driver belum kirim lokasi
 			if (response.status === 404) {
 				console.log(`ℹ️ Driver ${driverId} belum mengirim lokasi GPS`);
 			}
@@ -355,7 +353,6 @@ async function fetchDriverLocation(driverId) {
 		
 		const location = await response.json();
 		
-		// ✅ PERUBAHAN: Validasi data lokasi sebelum update marker
 		if (location && location.latitude && location.longitude) {
 			updateDriverMarker(driverId, {
 				latitude: location.latitude,
@@ -364,6 +361,13 @@ async function fetchDriverLocation(driverId) {
 				heading: location.heading || 0,
 				timestamp: location.timestamp
 			});
+			
+			if (shouldCenter && driverMarkers[driverId]) {
+				map.setView([location.latitude, location.longitude], 16);
+				driverMarkers[driverId].openPopup();
+				console.log(`🎯 Map centered to driver ${driverId}`);
+			}
+			
 			console.log(`✅ Driver ${driverId} location updated:`, location.latitude, location.longitude);
 		}
 		
@@ -372,34 +376,6 @@ async function fetchDriverLocation(driverId) {
 	}
 }
 
-// ✅ PERUBAHAN: Fungsi track driver yang lebih informatif
-// Track specific driver
-function trackDriver(driverId) {
-	// Coba track di map
-	const found = trackDriverOnMap(driverId, () => {
-		// Callback jika driver tidak ditemukan di map
-		showAlert('🔍 Mencari lokasi driver...', 'info');
-		
-		// Fetch lokasi driver
-		fetchDriverLocation(driverId).then(() => {
-			// Tunggu sebentar lalu coba track lagi
-			setTimeout(() => {
-				const retryFound = trackDriverOnMap(driverId);
-				if (retryFound) {
-					showAlert('📍 Driver ditemukan di peta', 'success');
-				} else {
-					showAlert('⚠️ Driver belum mengirim lokasi GPS. Pastikan driver sudah mengaktifkan GPS tracking.', 'error');
-				}
-			}, 1000);
-		});
-	});
-	
-	if (found) {
-		showAlert('📍 Driver ditemukan di peta', 'success');
-	}
-}
-
-// ✅ PERUBAHAN: Fungsi untuk start continuous tracking
 function startDriverTracking() {
 	// Stop existing interval jika ada
 	if (driverTrackingInterval) {
@@ -411,15 +387,14 @@ function startDriverTracking() {
 		if (activeDriverIds.size > 0) {
 			console.log(`🔄 Auto-updating ${activeDriverIds.size} driver location(s)...`);
 			activeDriverIds.forEach(driverId => {
-				fetchDriverLocation(driverId);
+				fetchDriverLocation(driverId, false); // false = jangan auto-center setiap update
 			});
 		}
 	}, 10000); // 10 detik
 	
-	console.log('✅ Driver tracking started (10s interval)');
+	console.log('✅ Driver auto-tracking started (10s interval)');
 }
 
-// ✅ PERUBAHAN: Fungsi untuk stop tracking
 function stopDriverTracking() {
 	if (driverTrackingInterval) {
 		clearInterval(driverTrackingInterval);
@@ -430,7 +405,6 @@ function stopDriverTracking() {
 
 // ==================== WEBSOCKET ====================
 
-// ✅ PERUBAHAN: WebSocket dengan reconnect yang lebih baik
 // WebSocket for real-time updates
 function initWebSocket() {
 	const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -447,7 +421,6 @@ function initWebSocket() {
 			try {
 				const data = JSON.parse(event.data);
 				
-				// ✅ PERUBAHAN: Handle location update dengan logging
 				if (data.type === 'location_update' && data.driver_id) {
 					console.log(`📡 WebSocket: Driver ${data.driver_id} location update received`);
 					
@@ -487,13 +460,11 @@ function initWebSocket() {
 
 // ==================== INITIALIZATION ====================
 
-// ✅ PERUBAHAN: Inisialisasi dengan tracking driver
 // Initialize
 setupMap();
 loadLocations();
 loadMyBookings(); // Ini akan trigger trackActiveDrivers()
 
-// ✅ PERUBAHAN: Start tracking interval setelah load pertama
 setTimeout(() => {
 	startDriverTracking();
 }, 2000); // Tunggu 2 detik setelah page load
@@ -501,21 +472,10 @@ setTimeout(() => {
 // Init WebSocket
 initWebSocket();
 
-// ✅ PERUBAHAN: Refresh bookings setiap 30 detik (tetap ada untuk backup)
 setInterval(() => {
 	loadMyBookings(); // Ini akan update active drivers juga
 }, 30000);
 
-// ✅ PERUBAHAN: Hapus interval update driver yang lama, karena sudah diganti dengan startDriverTracking()
-// Kode lama yang dihapus:
-// setInterval(() => {
-//   const driverIds = Object.keys(driverMarkers);
-//   driverIds.forEach(driverId => {
-//     fetchDriverLocation(parseInt(driverId));
-//   });
-// }, 10000);
-
-// ✅ PERUBAHAN: Cleanup saat page unload
 window.addEventListener('beforeunload', () => {
 	stopDriverTracking();
 	if (ws) ws.close();

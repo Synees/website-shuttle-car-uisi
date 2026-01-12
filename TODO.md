@@ -27,6 +27,6 @@ KOORDINAT_BARU = {
 
 - [x] `driver` driver tidak terdeteksi di peta
 - [x] `admin` driver tidak terdeteksi di peta
-- [ ] `pengguna` driver tidak terdeteksi di peta
+- [x] `pengguna` driver tidak terdeteksi di peta
  
 - [ ] Tambahkan dokumentasi di dalam kode

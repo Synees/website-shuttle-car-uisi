@@ -3,7 +3,6 @@ const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user') || '{}');
 
 let selectedScheduleFile = null;
-// ✅ PERUBAHAN: Tambah variable untuk tracking semua driver
 let allDriverTrackingInterval = null;
 
 // Check auth
@@ -19,7 +18,6 @@ function showAlert(message, type = 'error') {
 }
 
 function logout() {
-	// ✅ PERUBAHAN: Clear interval saat logout
 	if (allDriverTrackingInterval) {
 		clearInterval(allDriverTrackingInterval);
 	}
@@ -163,7 +161,6 @@ async function loadLocationsOnMapAdmin() {
 	}
 }
 
-// ✅ PERUBAHAN: Fungsi update semua driver dengan error handling yang lebih baik
 // Update all driver locations
 async function updateAllDriverLocations() {
 	try {
@@ -172,17 +169,14 @@ async function updateAllDriverLocations() {
 		});
 		
 		if (!response.ok) {
-			// ✅ PERUBAHAN: Jangan show error jika endpoint belum ada
 			console.log('ℹ️ Endpoint all-locations tidak tersedia atau belum ada driver aktif');
 			return;
 		}
 		
 		const drivers = await response.json();
 		
-		// ✅ PERUBAHAN: Log jumlah driver yang ditemukan
 		console.log(`📍 Found ${drivers.length} active driver(s)`);
 		
-		// ✅ PERUBAHAN: Clear markers driver yang tidak ada di response
 		const activeDriverIds = new Set(drivers.map(d => d.driver_id));
 		Object.keys(driverMarkers).forEach(driverId => {
 			if (!activeDriverIds.has(parseInt(driverId))) {
@@ -211,7 +205,6 @@ async function updateAllDriverLocations() {
 	}
 }
 
-// ✅ PERUBAHAN: Fungsi untuk start continuous tracking semua driver
 function startAllDriverTracking() {
 	// Stop existing interval jika ada
 	if (allDriverTrackingInterval) {
@@ -227,7 +220,6 @@ function startAllDriverTracking() {
 	console.log('✅ All driver tracking started (10s interval)');
 }
 
-// ✅ PERUBAHAN: Fungsi untuk stop tracking
 function stopAllDriverTracking() {
 	if (allDriverTrackingInterval) {
 		clearInterval(allDriverTrackingInterval);
@@ -705,7 +697,6 @@ async function deleteSchedule() {
 	await deleteScheduleConfirm();
 }
 
-// ✅ PERUBAHAN: Inisialisasi dengan tracking driver
 // Initialize
 setupMap();
 loadLocationsOnMapAdmin();
@@ -713,27 +704,17 @@ loadStats();
 loadBookings();
 loadScheduleStatusText(); // Load schedule status on page load
 
-// ✅ PERUBAHAN: Load driver locations pertama kali
 updateAllDriverLocations();
 
-// ✅ PERUBAHAN: Start tracking interval setelah load pertama
 setTimeout(() => {
 	startAllDriverTracking();
 }, 2000); // Tunggu 2 detik setelah page load
 
-// ✅ PERUBAHAN: Refresh every 30 seconds (tetap ada untuk backup)
 setInterval(() => {
 	loadStats();
 	loadBookings();
 }, 30000);
 
-// ✅ PERUBAHAN: Hapus interval update driver yang lama, karena sudah diganti dengan startAllDriverTracking()
-// Kode lama yang dihapus:
-// setInterval(() => {
-//   updateAllDriverLocations();
-// }, 10000);
-
-// ✅ PERUBAHAN: Cleanup saat page unload
 window.addEventListener('beforeunload', () => {
 	stopAllDriverTracking();
 });
