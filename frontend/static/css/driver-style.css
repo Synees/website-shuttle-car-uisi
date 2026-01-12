@@ -1,0 +1,236 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	min-height: 100vh;
+	padding: 10px;
+	color: white;
+}
+
+.header {
+	text-align: center;
+	margin-bottom: 20px;
+}
+
+.header h1 {
+	font-size: 20px;
+	margin-bottom: 5px;
+}
+
+.header p {
+	font-size: 14px;
+	opacity: 0.9;
+}
+
+.tracking-card {
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(10px);
+	border-radius: 20px;
+	padding: 20px;
+	margin-bottom: 15px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.tracking-button {
+	width: 150px;
+	height: 150px;
+	border-radius: 50%;
+	border: none;
+	margin: 20px auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+	font-size: 18px;
+	font-weight: bold;
+}
+
+.tracking-button.start {
+	background: linear-gradient(135deg, #11998e, #38ef7d);
+	color: white;
+}
+
+.tracking-button.stop {
+	background: linear-gradient(135deg, #ee0979, #ff6a00);
+	color: white;
+}
+
+.tracking-button:active {
+	transform: scale(0.95);
+}
+
+.tracking-button i {
+	font-size: 40px;
+	margin-bottom: 10px;
+}
+
+.status {
+	text-align: center;
+	padding: 12px;
+	border-radius: 12px;
+	margin: 15px 0;
+	font-weight: 600;
+	font-size: 14px;
+}
+
+.status.inactive {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+.status.active {
+	background: rgba(56, 239, 125, 0.2);
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.7; }
+}
+
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 10px;
+	margin-top: 15px;
+}
+
+.stat-card {
+	background: rgba(255, 255, 255, 0.15);
+	padding: 15px;
+	border-radius: 12px;
+	text-align: center;
+}
+
+.stat-label {
+	font-size: 11px;
+	opacity: 0.8;
+	margin-bottom: 5px;
+}
+
+.stat-value {
+	font-size: 24px;
+	font-weight: bold;
+}
+
+#map {
+	height: 400px;
+	border-radius: 12px;
+	margin-top: 20px;
+}
+
+.booking-list {
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+.booking-item {
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	padding: 15px;
+	margin-bottom: 10px;
+}
+
+.booking-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
+.booking-id {
+	font-weight: bold;
+	font-size: 16px;
+}
+
+.status-badge {
+	background: rgba(255, 255, 255, 0.3);
+	padding: 4px 10px;
+	border-radius: 12px;
+	font-size: 11px;
+}
+
+.booking-route {
+	font-size: 14px;
+	margin: 10px 0;
+}
+
+.booking-route i {
+	margin: 0 8px;
+}
+
+.booking-user {
+	font-size: 12px;
+	opacity: 0.9;
+	margin-top: 8px;
+}
+
+.btn {
+	padding: 10px;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 600;
+	font-size: 13px;
+	width: 100%;
+	margin-top: 10px;
+}
+
+.btn-arriving {
+	background: #fbbf24;
+	color: #78350f;
+}
+
+.btn-start {
+	background: #10b981;
+	color: white;
+}
+
+.btn-complete {
+	background: #3b82f6;
+	color: white;
+}
+
+.btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.btn-logout {
+	background: #ef4444;
+	color: white;
+	padding: 10px 20px;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	margin-top: 20px;
+	width: 100%;
+}
+
+.alert {
+	background: rgba(239, 68, 68, 0.2);
+	border-left: 4px solid #ef4444;
+	padding: 12px;
+	border-radius: 8px;
+	margin-bottom: 15px;
+	font-size: 13px;
+}
+
+.empty-state {
+	text-align: center;
+	padding: 40px 20px;
+	opacity: 0.7;
+}
+
+.empty-state i {
+	font-size: 48px;
+	margin-bottom: 10px;
+}
+

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UISI Shuttle - Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/login-style.css">
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="header">
+            <i class="fas fa-bus"></i>
+            <h1>UISI Shuttle Tracking</h1>
+            <p>Universitas Internasional Semen Indonesia</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('mahasiswa')">
+                <i class="fas fa-user-graduate"></i> Mahasiswa
+            </div>
+            <div class="tab" onclick="switchTab('staff')">
+                <i class="fas fa-user-tie"></i> Admin/Driver
+            </div>
+        </div>
+
+        <div class="form-container">
+            <div id="alert" class="alert"></div>
+
+            <!-- TAB MAHASISWA -->
+            <div id="mahasiswa-form" class="tab-content active">
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    <p><strong>Mahasiswa:</strong> Login menggunakan email UISI</p>
+                    <p>Format: nama.anda@student.uisi.ac.id</p>
+                </div>
+                <form onsubmit="loginMahasiswa(event)">
+                    <div class="form-group">
+                        <label>Email UISI</label>
+                        <input type="email" id="mahasiswa-email" placeholder="nama.anda@student.uisi.ac.id" required>
+                        <small>Gunakan email kampus Anda</small>
+                    </div>
+                    <button type="submit" class="btn" id="btn-mahasiswa">
+                        <i class="fas fa-sign-in-alt"></i> Masuk sebagai Mahasiswa
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB ADMIN/DRIVER -->
+            <div id="staff-form" class="tab-content">
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    <p><strong>Admin/Driver:</strong> Login dengan akun resmi</p>
+                </div>
+                <form onsubmit="loginStaff(event)">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="staff-email" placeholder="admin@uisi.ac.id" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="staff-password" placeholder="Masukkan password" required>
+                    </div>
+                    <button type="submit" class="btn" id="btn-staff">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/login-script.js">
+
+    </script>
+</body>
+</html>

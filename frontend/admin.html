@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UISI Shuttle - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/admin-style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-user-shield"></i>
+            <span>Admin Dashboard</span>
+        </div>
+        <button class="btn-logout" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </nav>
+
+    <div class="container">
+        <div id="alert" class="alert"></div>
+
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Booking Hari Ini</h3>
+                <div class="value" id="stat-today">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Booking Diterima</h3>
+                <div class="value" id="stat-accepted">0</div>
+            </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('bookings')">
+                <i class="fas fa-ticket-alt"></i> Semua Booking
+            </button>
+            <button class="tab" onclick="switchTab('locations')">
+                <i class="fas fa-map-marker-alt"></i> Kelola Lokasi
+            </button>
+            <button class="tab" onclick="switchTab('users')">
+                <i class="fas fa-users"></i> List Pengguna
+            </button>
+            <button class="btn btn-success" onclick="showUploadScheduleModal()">
+                <i class="fas fa-upload"></i> Upload Jadwal
+            </button>
+            <span id="schedule-status-text" style="margin-left: 15px; color: #6b7280; font-size: 14px;">
+                <i class="fas fa-spinner fa-spin"></i> Memuat...
+            </span>
+        </div>
+
+        <!-- TAB: BOOKINGS -->
+        <div id="tab-bookings" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Daftar Semua Booking</div>
+                    <button class="btn btn-primary" onclick="loadBookings()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="bookings-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Mahasiswa</th>
+                                <th>Dari</th>
+                                <th>Ke</th>
+                                <th>Driver</th>
+                                <th>Status</th>
+                                <th>Waktu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-tbody">
+                            <tr><td colspan="7" style="text-align: center; padding: 40px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: LOCATIONS -->
+        <div id="tab-locations" class="tab-content">
+			<div class="card">
+				<div class="card-title">
+					<i class="fas fa-map-marked-alt"></i>
+					Live Tracking Shuttle
+				</div>
+				<div id="map"></div>
+			</div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Kelola Pos Penjemputan</div>
+                    <button class="btn btn-success" onclick="showAddLocationModal()">
+                        <i class="fas fa-plus"></i> Tambah Lokasi
+                    </button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nama Lokasi</th>
+                                <th>Koordinat</th>
+                                <th>Tipe</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="locations-tbody">
+                            <tr><td colspan="6" style="text-align: center; padding: 40px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: USERS -->
+        <div id="tab-users" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">List Pengguna (Mahasiswa)</div>
+                    <button class="btn btn-primary" onclick="loadUsers()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Email Mahasiswa</th>
+                                <th>Nama</th>
+                                <th>NIM</th>
+                                <th>Total Booking</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <tr><td colspan="6" style="text-align: center; padding: 40px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SCHEDULE (BARU) -->
+        <div id="tab-schedule" class="tab-content">
+            <!-- HAPUS SEMUA INI - TIDAK DIPAKAI LAGI -->
+        </div>
+    </div>
+
+    <!-- MODAL ADD/EDIT LOCATION -->
+    <div id="location-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Tambah Lokasi Baru</h2>
+                <span class="close" onclick="closeLocationModal()">&times;</span>
+            </div>
+            <form onsubmit="saveLocation(event)">
+                <input type="hidden" id="location-id">
+                <div class="form-group">
+                    <label>Nama Lokasi *</label>
+                    <input type="text" id="location-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Deskripsi</label>
+                    <input type="text" id="location-desc">
+                </div>
+                <div class="form-group">
+                    <label>Latitude *</label>
+                    <input type="number" step="any" id="location-lat" required>
+                </div>
+                <div class="form-group">
+                    <label>Longitude *</label>
+                    <input type="number" step="any" id="location-lng" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipe</label>
+                    <select id="location-type">
+                        <option value="pickup">Pickup</option>
+                        <option value="drop">Drop</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL HISTORI PEMESANAN -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="history-modal-title">Histori Pemesanan</h2>
+                <span class="close" onclick="closeHistoryModal()">&times;</span>
+            </div>
+            <div id="history-content">
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #dc2626;"></i>
+                    <p style="margin-top: 15px;">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL UPLOAD SCHEDULE (BARU) -->
+    <div id="schedule-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Jadwal Shuttle</h2>
+                <span class="close" onclick="closeScheduleModal()">&times;</span>
+            </div>
+            <div style="padding: 20px;">
+                <input type="file" id="schedule-file-input" accept=".pdf" style="display: none;" onchange="handleScheduleFileSelect(event)">
+                
+                <button class="btn btn-success" onclick="document.getElementById('schedule-file-input').click()" style="width: 100%; margin-bottom: 15px;">
+                    <i class="fas fa-file-upload"></i> Pilih File PDF
+                </button>
+                
+                <div id="selected-file-info" style="padding: 15px; background: #f3f4f6; border-radius: 8px; margin-bottom: 15px; display: none;">
+                    <strong>File dipilih:</strong><br>
+                    <span id="selected-file-name"></span>
+                </div>
+                
+                <button class="btn btn-primary" id="btn-upload-schedule" onclick="uploadSchedule()" disabled style="width: 100%; opacity: 0.5;">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload Jadwal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="/static/js/map-script.js"></script>
+    <script src="/static/js/admin-script.js"></script>
+</body>
+</html>

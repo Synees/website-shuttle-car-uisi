@@ -1,48 +1,44 @@
 # Website Shuttle Car UISI
-Sistem tracking shuttle kampus real-time untuk **Universitas Internasional Semen Indonesia (UISI)** dengan fitur permintaan fleksibel via WhatsApp.
-```
-uisi-shuttle-tracking/
-│
-├── README.md                          # Dokumentasi utama (baca dulu!)
-├── requirements.txt                   # Python dependencies
-├── .gitignore                        # Git ignore file
-│
-├── backend/
-│   ├── main.py                       # Backend utama (FastAPI)
-│   ├── setup_database.py             # Setup database & rute UISI
-│   ├── config.py                     # Konfigurasi
-│   ├── models.py                     # Database models
-│   ├── utils.py                      # Helper functions
-│   └── shuttle.db                    # SQLite database (auto-generated)
-│
-├── frontend/
-│   ├── index.html                    # Halaman mahasiswa (tracking)
-│   ├── driver.html                   # Halaman driver (GPS tracker)
-│   ├── admin.html                    # Halaman admin (manage)
-│   ├── css/
-│   │   └── style.css                 # Styling
-│   └── js/
-│       ├── mahasiswa.js              # JS untuk mahasiswa
-│       ├── driver.js                 # JS untuk driver
-│       └── admin.js                  # JS untuk admin
-│
-├── tests/
-│   ├── test_api.py                   # Test API endpoints
-│   └── test_flow.py                  # Test full workflow
-│
-├── scripts/
-│   ├── update_coordinates.py         # Update GPS coordinates
-│   ├── backup_database.py            # Backup database
-│   └── reset_database.py             # Reset database
-│
-└── docs/
-    ├── API_DOCUMENTATION.md          # API docs lengkap
-    ├── SETUP_GUIDE.md                # Panduan setup
-    ├── USER_GUIDE.md                 # Panduan pengguna
-    └── DEPLOYMENT.md                 # Panduan deployment
-```
-## 🚀 Quick Start (5 Menit!)
+Sistem tracking shuttle kampus real-time untuk **Universitas Internasional Semen Indonesia (UISI)**
 
+## Struktur Folder
+```
+website-shuttle-car-uisi/
+├── .venv
+├── assets
+│   └── jadwal.pdf
+├── backend
+│   └── setup_database.py
+├── frontend
+│   ├── admin.html
+│   ├── driver.html
+│   ├── login.html
+│   ├── pengguna.html
+│   └── static
+│       ├── css
+│       │   ├── admin-style.css
+│       │   ├── driver-style.css
+│       │   ├── login-style.css
+│       │   └── pengguna-style.css
+│       └── js
+│           ├── admin-script.js
+│           ├── driver-script.js
+│           ├── login-script.js
+│           ├── map-script.js
+│           └── pengguna-script.js
+├── generate_ssl.py
+├── main.py
+├── README.md
+├── requirements.txt
+├── scripts
+│   ├── backup_database.py
+│   ├── reset_database.py
+│   └── update_coordinates.py
+└── TODO.md
+
+```
+
+## Setup
 ### Step 1: Install Dependencies
 ```bash
 pip install -r requirements.txt
@@ -54,17 +50,31 @@ cd backend
 python setup_database.py
 ```
 
-### Step 3: Jalankan Server
+### Step 3: Setup https 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+python generate_ssl.py
 ```
 
-Server jalan di: **http://localhost:8000**
+### Step 4: Cek ip address wireless
+cek dibagian wireless <br>
+Linux:
+```
+ip addr
+```
 
-### Step 4: Buka Frontend
-- Mahasiswa: http://localhost:8000/
-- Driver: http://localhost:8000/driver.html
-- Admin: http://localhost:8000/admin.html
+Windows:
+```
+ifconfig
+```
+
+### Step 3: Jalankan Server
+```bash
+python main.py [IP] 8000
+```
+
+- Mahasiswa: https://[IP]:8000/
+- Driver: https://[IP]8000/driver.html
+- Admin: https://[IP]8000/admin.html
 
 ## 📍 PENTING: Update Koordinat GPS!
 
@@ -81,60 +91,8 @@ Cara cari koordinat:
 4. Copy koordinat (contoh: -7.1633, 112.6280)
 5. Update di `update_coordinates.py`
 
-## 📱 Cara Pakai
-
-### Untuk Driver:
-1. Cari IP komputer server: `ipconfig` (Windows) atau `ifconfig` (Mac/Linux)
-2. Buka browser HP: `http://[IP]:8000/driver.html`
-3. Klik START TRACKING
-4. Izinkan akses lokasi
-
-### Untuk Mahasiswa:
-1. Buka browser: `http://[IP]:8000/`
-2. Lihat posisi shuttle real-time
-3. Lihat ETA ke setiap lokasi
-
-### Untuk Admin:
-1. Buka: `http://[IP]:8000/admin.html`
-2. Input request dari grup WhatsApp
-3. Manage rute & lihat history
-
-## 📚 Dokumentasi Lengkap
-
-Lihat folder `docs/` untuk dokumentasi detail:
-- `SETUP_GUIDE.md` - Setup lengkap step by step
-- `API_DOCUMENTATION.md` - API reference
-- `USER_GUIDE.md` - Panduan pengguna
-- `DEPLOYMENT.md` - Deploy ke production
-
 ## 🧪 Testing
 ```bash
 cd tests
 python test_api.py
 ```
-
-## 🛠️ Troubleshooting
-
-**Server tidak bisa diakses dari HP:**
-- Pastikan WiFi sama
-- Check firewall (allow port 8000)
-- Gunakan IP address yang benar
-
-**GPS tidak akurat:**
-- Keluar ruangan (outdoor)
-- Enable "High Accuracy" di settings
-- Tunggu GPS lock (10-20 detik)
-
-**Database error:**
-```bash
-cd scripts
-python reset_database.py
-```
-
-## 📧 Support
-
-Baca dokumentasi di folder `docs/` atau check API docs: http://localhost:8000/docs
-
----
-
-**Developed for UISI - Universitas Internasional Semen Indonesia** 🎓

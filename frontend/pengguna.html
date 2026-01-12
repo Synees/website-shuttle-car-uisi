@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UISI Shuttle - Mahasiswa</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="/static/css/pengguna-style.css">
+</head>
+	
+<body>
+	<nav class="navbar">
+	<div class="navbar-brand">
+		<i class="fas fa-bus"></i>
+		<span>UISI Shuttle</span>
+	</div>
+	<div class="navbar-user">
+		<div class="user-info">
+			<strong id="user-name">Loading...</strong>
+			<small id="user-email"></small>
+		</div>
+		<button class="btn-logout" onclick="logout()">
+			<i class="fas fa-sign-out-alt"></i> Logout
+		</button>
+	</div>
+	</nav>
+
+	<div class="container">
+	<div id="alert" class="alert"></div>
+
+	<!-- BOOKING FORM -->
+	<div class="card">
+		<div class="card-header">
+			<div class="card-title">
+				<i class="fas fa-ticket-alt"></i>
+				Buat Pemesanan Shuttle
+			</div>
+		<div class="card-right-header">
+			<button class="btn btn-jadwal" onclick="viewSchedule()">
+				<i class="fa-regular fa-calendar"></i> Lihat Jadwal
+			</button>
+		</div>
+		</div>
+		<form onsubmit="createBooking(event)">
+			<div class="form-group">
+				<label>Lokasi Penjemputan</label>
+				<select id="from-location" required>
+					<option value="">Pilih lokasi penjemputan...</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label>Lokasi Tujuan</label>
+				<select id="to-location" required>
+					<option value="">Pilih lokasi tujuan...</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label>Catatan (Opsional)</label>
+				<textarea id="notes" rows="2" placeholder="Contoh: Saya di depan gedung A"></textarea>
+			</div>
+			<button type="submit" class="btn btn-primary" id="btn-booking">
+				<i class="fas fa-check"></i> Pesan Shuttle
+			</button>
+		</form>
+	</div>
+
+	<!-- MAP -->
+	<div class="card">
+		<div class="card-title">
+			<i class="fas fa-map-marked-alt"></i>
+			Live Tracking Shuttle
+		</div>
+		<div id="map"></div>
+	</div>
+
+	<!-- BOOKING HISTORY -->
+	<div class="card">
+		<div class="card-header">
+			<div class="card-title">
+				<i class="fas fa-history"></i>
+				Riwayat Pemesanan
+			</div>
+			<button class="btn btn-primary" onclick="loadMyBookings()">
+				<i class="fas fa-sync"></i> Refresh
+			</button>
+		</div>
+		<div class="booking-list" id="booking-list">
+			<div class="empty-state">
+				<i class="fas fa-inbox"></i>
+				<p>Belum ada pemesanan</p>
+			</div>
+		</div>
+	</div>
+	</div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="/static/js/map-script.js"></script>
+    <script src="/static/js/pengguna-script.js"></script>
+
+    </script>
+</body>
+</html>
